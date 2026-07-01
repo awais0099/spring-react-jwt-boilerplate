@@ -3,7 +3,7 @@ package com.project.auth_app_backend.dtos;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Response package delivered upon successful validation of identity credentials, containing state tokens and sanitized user profile data")
-public record TokenResponse(
+public record TokenData(
         @Schema(description = "Short-lived cryptographic JSON Web Token enabling immediate access to secured resources", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
         String accessToken,
 
@@ -20,11 +20,11 @@ public record TokenResponse(
         UserDto user
 ) {
         
-    public static TokenResponse of(String accessToken, String refreshToken, long expiresIn, UserDto user) {
-        return new TokenResponse(accessToken, refreshToken, expiresIn, "Bearer", user);
+    public static TokenData of(String accessToken, String refreshToken, long expiresIn, UserDto user) {
+        return new TokenData(accessToken, refreshToken, expiresIn, "Bearer", user);
     }
 
-    public TokenResponse(String accessToken, String refreshToken, long expiresIn, UserDto user) {
+    public TokenData(String accessToken, String refreshToken, long expiresIn, UserDto user) {
         this(accessToken, refreshToken, expiresIn, "Bearer", user);
     }
 }

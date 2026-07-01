@@ -1,11 +1,12 @@
 package com.project.auth_app_backend.controllers;
 
-import com.project.auth_app_backend.dtos.ApiError;
 import com.project.auth_app_backend.dtos.LoginRequest;
 import com.project.auth_app_backend.dtos.RefreshTokenRequest;
-import com.project.auth_app_backend.dtos.TokenResponse;
+import com.project.auth_app_backend.dtos.RestResponse;
+import com.project.auth_app_backend.dtos.TokenData;
 import com.project.auth_app_backend.dtos.UserDto;
 import com.project.auth_app_backend.entities.RefreshToken;
+import com.project.auth_app_backend.entities.Role;
 import com.project.auth_app_backend.entities.User;
 import com.project.auth_app_backend.repositories.RefreshTokenRepository;
 import com.project.auth_app_backend.repositories.UserRepository;
@@ -43,7 +44,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -51,6 +54,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Tag(name = "1. Identity & Access Management", description = "Endpoints handling registration, session creation, token rotation, and secure logout sequences.")
 public class AuthController {
+    
     private final AuthService authService;
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
@@ -65,15 +69,18 @@ public class AuthController {
         description = "Validates inbound user attributes, enforces email uniqueness constraints, cryptographically hashes the password, and provisions a default subscriber role."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Account created successfully.", content = @Content(schema = @Schema(implementation = UserDto.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid payload parameters or email already registered.", content = @Content(schema = @Schema(implementation = ApiError.class))),
-        @ApiResponse(responseCode = "500", description = "Internal system database persistence fault.", content = @Content(schema = @Schema(implementation = ApiError.class)))
+        @ApiResponse(responseCode = "201", description = "Account created successfully.", content = @Content(schema = @Schema(implementation = RestResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid payload parameters or email already registered."),
+        @ApiResponse(responseCode = "500", description = "Internal system database persistence fault.")
     })
-    public ResponseEntity<UserDto> registerUser(@RequestBody UserDto userDto) {
+    public ResponseEntity<RestResponse<UserDto>> registerUser(@RequestBody UserDto userDto) {
         log.info("Auth Entry: Registration attempt for email: {}", userDto.getEmail());
         UserDto savedUserDto = authService.registerUser(userDto);
         log.info("Auth Success: User registered with ID: {}", savedUserDto.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedUserDto);
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                RestResponse.created("Account created successfully.", savedUserDto)
+        );
     }
 
     @PostMapping("/login")
@@ -82,10 +89,10 @@ public class AuthController {
         description = "Verifies password credentials against the database, validates account status flags, saves an active parent Refresh Token record to the database, and returns a token payload while dropping an HttpOnly cookie."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Authentication successful. Session tokens generated.", content = @Content(schema = @Schema(implementation = TokenResponse.class))),
-        @ApiResponse(responseCode = "401", description = "Bad credentials or user account is disabled.", content = @Content(schema = @Schema(implementation = ApiError.class)))
+        @ApiResponse(responseCode = "200", description = "Authentication successful. Session tokens generated.", content = @Content(schema = @Schema(implementation = RestResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Bad credentials or user account is disabled.")
     })
-    public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
+    public ResponseEntity<RestResponse<TokenData>> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         log.info("Auth Entry: Login attempt for user: {}", loginRequest.email());
         
         authenticate(loginRequest);
@@ -119,27 +126,32 @@ public class AuthController {
         cookieService.attachRefreshCookie(response, refreshToken, (int) jwtService.getRefreshTtlSeconds());
         log.info("Auth Success: User {} logged in. Tokens issued.", user.getEmail());
 
-        TokenResponse tokenResponse = TokenResponse.of(
-                accessToken,
-                refreshToken,
-                jwtService.getAccessTtlSeconds(),
-                mapper.map(user, UserDto.class)
+        UserDto userDto = mapper.map(user, UserDto.class);
+        
+        Set<String> cleanRoleNames = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet());
+        userDto.setRoles(cleanRoleNames);
+
+        // Standardized on TokenData record to capture your explicit schema attributes
+        TokenData tokenDataPayload = TokenData.of(accessToken, refreshToken, jwtService.getAccessTtlSeconds(), userDto);
+
+        return ResponseEntity.ok(
+                RestResponse.success("Authentication successful.", tokenDataPayload)
         );
-
-        return ResponseEntity.ok(tokenResponse);
     }
-
+    
     @PostMapping("/refresh-token")
     @Operation(
         summary = "Rotate an expired access token using a refresh token",
         description = "Extracts the refresh token from either the HTTP body payload or an HttpOnly cookie fallback. Performs reuse tracking checks, revokes old token trees, and provisions a fresh set of session identifiers."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Tokens rotated successfully.", content = @Content(schema = @Schema(implementation = TokenResponse.class))),
-        @ApiResponse(responseCode = "401", description = "Refresh token missing, invalid, or expired.", content = @Content(schema = @Schema(implementation = ApiError.class))),
-        @ApiResponse(responseCode = "403", description = "SECURITY WARNING: Refresh token reuse detected.", content = @Content(schema = @Schema(implementation = ApiError.class)))
+        @ApiResponse(responseCode = "200", description = "Tokens rotated successfully.", content = @Content(schema = @Schema(implementation = RestResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Refresh token missing, invalid, or expired."),
+        @ApiResponse(responseCode = "403", description = "SECURITY WARNING: Refresh token reuse detected.")
     })
-    public ResponseEntity<TokenResponse> refreshToken(
+    public ResponseEntity<RestResponse<TokenData>> refreshToken(
             @RequestBody(required = false) RefreshTokenRequest refreshTokenRequest,
             HttpServletRequest request,
             HttpServletResponse response
@@ -186,7 +198,14 @@ public class AuthController {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found during refresh"));
-
+        
+        UserDto userDto = mapper.map(user, UserDto.class);
+        
+        Set<String> rolesName = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet());
+        userDto.setRoles(rolesName);
+        
         String newAccessToken = jwtService.generateAccessToken(user);
         String newRefreshToken = jwtService.generateRefreshToken(user, newJti);
 
@@ -203,7 +222,11 @@ public class AuthController {
         
         cookieService.attachRefreshCookie(response, newRefreshToken, (int) jwtService.getRefreshTtlSeconds());
 
-        return ResponseEntity.ok(new TokenResponse(newAccessToken, newRefreshToken, jwtService.getAccessTtlSeconds(), "refresh", mapper.map(user, UserDto.class)));
+        TokenData tokenDataPayload = new TokenData(newAccessToken, newRefreshToken, jwtService.getAccessTtlSeconds(), userDto);
+
+        return ResponseEntity.ok(
+                RestResponse.success("Tokens rotated successfully.", tokenDataPayload)
+        );
     }
 
     @PostMapping("/logout")
@@ -213,10 +236,10 @@ public class AuthController {
         security = @SecurityRequirement(name = "Bearer Authentication")
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "24", description = "Session terminated successfully. Context completely cleared."),
-        @ApiResponse(responseCode = "401", description = "Access credentials invalid or missing context verification.", content = @Content(schema = @Schema(implementation = ApiError.class)))
+        @ApiResponse(responseCode = "204", description = "Session terminated successfully. Context completely cleared."),
+        @ApiResponse(responseCode = "401", description = "Access credentials invalid or missing context verification.")
     })
-    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<RestResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
         log.info("Auth Entry: Logout requested.");
 
         readRefreshTokenFromRequest(null, request).ifPresent(token -> {
@@ -238,7 +261,9 @@ public class AuthController {
         SecurityContextHolder.clearContext();
         
         log.info("Auth Success: User logged out successfully.");
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(
+                RestResponse.success("Session terminated successfully.")
+        );
     }
 
     private Optional<String> readRefreshTokenFromRequest(RefreshTokenRequest body, HttpServletRequest request) {

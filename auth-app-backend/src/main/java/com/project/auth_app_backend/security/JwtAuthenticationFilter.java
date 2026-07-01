@@ -68,12 +68,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         
         String requestURI = request.getRequestURI();
-        String method = request.getMethod();
         String header = request.getHeader(AUTHORIZATION_HEADER);
 
+        // FIX: Pass along the chain if the header is missing/malformed instead of hard-failing!
         if (header == null || !header.startsWith(BEARER_PREFIX)) {
-            log.warn("JWT Filter: Missing or malformed Authorization token context for entry to: {}", requestURI);
-            sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Missing or malformed authorization credentials.", requestURI);
+            log.debug("JWT Filter: No bearer token found for path: {}. Passing downstream.", requestURI);
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -100,6 +100,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+            // Extract the string names of your roles and turn them cleanly into GrantedAuthority blocks
             List<String> rolesStr = jwtService.getRoles(token);
             List<GrantedAuthority> roles = rolesStr.stream()
                     .map(SimpleGrantedAuthority::new)
@@ -115,7 +116,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("JWT Filter: Secure tunnel established for user: {}", email);
+                log.debug("JWT Filter: Secure tunnel established for user: {} with roles: {}", email, rolesStr);
             }
 
         } catch (ExpiredJwtException exception) {
@@ -132,6 +133,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Proceed down the pipeline if token processing succeeds completely
         filterChain.doFilter(request, response);
     }
 
@@ -139,6 +141,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setStatus(status.value());
         response.setContentType("application/json;charset=UTF-8");
         
+        // Assumes your ApiError structure is matching your system configuration layout
         var apiError = new ApiError(status.value(), status.getReasonPhrase(), message, path, null);
         response.getWriter().write(objectMapper.writeValueAsString(apiError));
     }

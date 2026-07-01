@@ -15,7 +15,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -59,7 +61,16 @@ public class UserServiceImpl implements UserService {
                     log.warn("UserService: User fetch failed - No user found with email: {}", email);
                     return new ResourceNotFoundException("User not found with given email");
                 });
-        return modelMapper.map(user, UserDto.class);
+        
+        Set<String> cleanRoleNames = user.getRoles().stream()
+                .map(role -> role.getName())
+                .collect(Collectors.toSet());
+        
+        UserDto userdto = modelMapper.map(user, UserDto.class);
+        
+        userdto.setRoles(cleanRoleNames);
+        
+        return userdto;
     }
 
     @Override

@@ -3,8 +3,11 @@ package com.project.auth_app_backend.security;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -12,6 +15,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import com.project.auth_app_backend.dtos.UserDto;
 import com.project.auth_app_backend.entities.Provider;
 import com.project.auth_app_backend.entities.RefreshToken;
 import com.project.auth_app_backend.entities.User;
@@ -33,6 +37,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private final JwtService jwtService;
     private final CookieService cookieService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final ModelMapper mapper;
 
     @Value("${app.auth.frontend.success-redirect}")
     private String frontEndSuccessUrl;
@@ -89,9 +94,14 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         // Create Refresh Token Entity
         String jti = UUID.randomUUID().toString();
-
+        
+        UserDto userDto = mapper.map(user, UserDto.class);
+        
+        Set<String> rolesName = user.getRoles().stream().map(role -> role.getName()).collect(Collectors.toSet());
+        
+        userDto.setRoles(rolesName);
         RefreshToken refreshTokenEntity = new RefreshToken();
-
+        
         refreshTokenEntity.setJti(jti);
         refreshTokenEntity.setUser(user);
         refreshTokenEntity.setRevoked(false);

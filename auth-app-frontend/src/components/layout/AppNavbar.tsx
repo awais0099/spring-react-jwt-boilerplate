@@ -21,7 +21,7 @@ export default function AppNavbar() {
         {/* Brand Core Identity */}
         <Link to="/" className="flex items-center gap-2 font-bold text-white tracking-tight text-lg hover:opacity-90">
           <ShieldCheckIcon className="h-6 w-6 text-emerald-400" />
-          <span>Presta<span className="text-emerald-400">Shark</span></span>
+          <span>Auth<span className="text-emerald-400">entication</span></span>
         </Link>
 
         {/* Action Blocks Swapped Dynamically via Zustand State Matrix */}

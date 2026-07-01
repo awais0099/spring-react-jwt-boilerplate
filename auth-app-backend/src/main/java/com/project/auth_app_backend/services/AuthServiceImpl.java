@@ -14,13 +14,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
+
 @Slf4j
 @Service
 @AllArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository; // Injecting your role database access vector
+    private final RoleRepository roleRepository; 
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper mapper;
 
@@ -35,7 +36,7 @@ public class AuthServiceImpl implements AuthService {
             throw new RegistrationException("An account is already registered with this email address.");
         }
 
-        // 2. Fetch the persistent Role entity from the database
+        // 2. Fetch the safe system default role ('ROLE_USER') from the database
         Role defaultRole = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> {
                     log.error("Database Configuration Error: Target role 'ROLE_USER' not found in database!");
@@ -49,11 +50,9 @@ public class AuthServiceImpl implements AuthService {
             log.debug("Auth Core: Applying cryptographic shielding to user password.");
             userEntity.setPassword(passwordEncoder.encode(userDto.getPassword()));
             
-            // Set operational fields
+            // 4. Force default parameters safely
             userEntity.setEnable(true); 
-            
-            // Assign the real persistent database object to the user's roles collection
-            userEntity.setRoles(Set.of(defaultRole)); 
+            userEntity.setRoles(Set.of(defaultRole)); // Attaches the database verified Role entity
 
             User savedUser = userRepository.save(userEntity);
             log.info("Auth Success: Account provisioned successfully. ID: {} | Email: {}", savedUser.getId(), savedUser.getEmail());

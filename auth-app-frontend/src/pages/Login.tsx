@@ -32,7 +32,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const loginAction = useAuthStore((state) => state.login);
 
-  // Senior Pattern: Core submission workflow driven by native FormData extraction
   const handleCredentialsLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -46,9 +45,8 @@ export default function LoginPage() {
 
     try {
       const loginResponse = await authService.login({ email, password });
-
       // Core Handshake: Dispatch tokens cleanly into Zustand context memory
-      loginAction(loginResponse.user, loginResponse.accessToken);
+      loginAction(loginResponse.data.user, loginResponse.data.accessToken);
       
       formElement.reset();
       navigate('/dashboard');
@@ -56,10 +54,8 @@ export default function LoginPage() {
       const apiError = error as SpringApiError;
       
       if (apiError && typeof apiError.message === "string") {
-        // Captches standard Spring Security validation responses or custom BadCredentialsExceptions
         setLoginRequestError(apiError.message);
       } else if (error instanceof Error) {
-        // Catches local browser disruptions or transport/network connection losses
         setLoginRequestError(error.message);
       } else {
         setLoginRequestError("An unexpected credential authorization anomaly occurred.");
@@ -82,13 +78,13 @@ export default function LoginPage() {
             Welcome back
           </CardTitle>
           <CardDescription>
-            Enter your credentials or choose a provider
+            Enter your credentials {/* or choose a provider */}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           
           {/* OAuth2 Actions */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* <div className="grid grid-cols-2 gap-3">
             <Button
               variant="outline"
               className="w-full gap-2 cursor-pointer"
@@ -126,7 +122,7 @@ export default function LoginPage() {
                 Or continue with email
               </span>
             </div>
-          </div>
+          </div>*/}
 
           {loginRequestError && (
             <Alert variant="destructive" className="max-w-md">

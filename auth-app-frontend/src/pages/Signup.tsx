@@ -83,14 +83,14 @@ export default function Signup() {
           <CardTitle className="text-2xl font-bold tracking-tight">
             Create an account
           </CardTitle>
-          <CardDescription>
+          {/* <CardDescription>
             Choose a provider or sign up with email
-          </CardDescription>
+          </CardDescription> */}
         </CardHeader>
         <CardContent className="grid gap-4">
           
           {/* OAuth2 Providers */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* <div className="grid grid-cols-2 gap-3">
             <Button
               variant="outline"
               onClick={() => handleOAuth2Signup("google")}
@@ -116,7 +116,7 @@ export default function Signup() {
                 Or
               </span>
             </div>
-          </div>
+          </div> */}
 
           {signupRequestError && (
             <Alert variant="destructive" className="max-w-md">

@@ -16,10 +16,10 @@ export default function Dashboard() {
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore(state => state.accessToken);
   const logoutAction = useAuthStore((state) => state.logout);
-  
+
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [apiResponse, setApiResponse] = useState<string | null>(null);
-  
+
   // UI States for Token Inspector
   const [showToken, setShowToken] = useState(false);
   const [copied, setCopied] = useState(false);

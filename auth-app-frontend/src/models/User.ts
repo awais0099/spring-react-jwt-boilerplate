@@ -4,6 +4,7 @@ export default interface User {
   name?: string;
   enabled: boolean;
   image?: string;
+  roles?: [];
   updatedAt?: string;
   createdAt?: string;
   provider: string;

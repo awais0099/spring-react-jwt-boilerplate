@@ -1,0 +1,83 @@
+# ===================================================================
+# Production Configurations
+# ===================================================================
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+    include-stacktrace: never # Hide internal stack traces from API responses
+
+springdoc:
+  show-actuator: false # Disable internal metrics expose on production docs
+
+spring:
+  datasource:
+    # Switched to PostgreSQL driver matching standard production cloud environments
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      # Use update temporarily for initial deployment, validate or none later
+      ddl-auto: update
+    show-sql: false # Turn off sql printing to prevent disk space saturation
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+              - openid
+
+logging:
+  file:
+    name: log/auth-app-backend-prod.log
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB # Raised file cap size slightly for multi-user cycles
+      max-history: 7
+  level:
+    root: INFO
+    com.project.auth_app_backend: INFO # Switch application logging to INFO for cleaner performance
+    org.springframework.security: WARN # Keep security logs concise, catching exceptions primarily
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:auth-app-backend}
+    access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:900}       # Default 15 min
+    refresh-ttl-seconds: ${JWT_REFRESH_TTL_SECONDS:604800}   # Default 7 days
+    refresh-token-cookie-name: ${JWT_REFRESH_COOKIE_NAME:refresh_token}
+    cookie-secure: ${JWT_COOKIE_SECURE:true}                 # Must be true for HTTPS production environments
+    cookie-http-only: ${JWT_COOKIE_HTTP_ONLY:true}           # Safeguards token cookie from XSS scripts
+    cookie-same-site: ${JWT_COOKIE_SAME_SITE:Lax}
+    cookie-domain: ${JWT_COOKIE_DOMAIN:}                     # Leaves dynamic binding or specific domain
+    cookie-path: ${JWT_COOKIE_PATH:/api/v1/auth/refresh-token} # Restricts cookies to rotation endpoint
+    cookie-max-age: ${JWT_COOKIE_MAX_AGE:604800}
+
+app:
+  cors:
+    # Allows dynamic runtime frontend integration matching your client deployment URL
+    front-end-url: ${FRONTEND_URL}
+  auth:
+    frontend:
+      success-redirect: ${FRONTEND_URL}/oauth/success
+      failure-redirect: ${FRONTEND_URL}/oauth/failure

@@ -6,6 +6,7 @@ import lombok.*;
 import java.time.Instant;
 import java.util.UUID;
 
+
 @Entity
 @Table(name = "refresh_tokens", indexes = {
         @Index(name = "refresh_tokens_jti_idx", columnList = "jti", unique = true),
@@ -38,8 +39,5 @@ public class RefreshToken {
     @Column(nullable = false)
     private boolean revoked;
 
-//    private String refreshToken;
-
     private String replacedByToken;
-
 }
