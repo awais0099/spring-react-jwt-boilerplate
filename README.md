@@ -92,10 +92,10 @@ backend/
 frontend/
 ├── components
 ├── pages
-├── services
-├── hooks
-├── context
-└── utils
+├── api
+├── store
+├── assets
+└── lib
 ```
 
 ---

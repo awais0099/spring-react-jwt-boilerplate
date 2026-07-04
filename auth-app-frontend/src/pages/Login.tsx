@@ -15,7 +15,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { authService } from "@/api/authService";
 import { AlertCircleIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useAuthStore } from "@/auth/store";
+import { useAuthStore } from "@/store";
 
 interface SpringApiError {
   status?: number;

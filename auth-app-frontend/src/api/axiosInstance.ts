@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
-import { useAuthStore } from "@/auth/store";
+import { useAuthStore } from "@/store";
 import { authService } from "./authService";
 
 interface SpringErrorPayload {

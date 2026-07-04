@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router"; // or 'react-router-dom' depending on your package.json
-import { useAuthStore } from "./auth/store";
+import { useAuthStore } from "./store/index.ts";
 
 // Layouts & Guards
 import RootLayout from './pages/RootLayout.tsx'

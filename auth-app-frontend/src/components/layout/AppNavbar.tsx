@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router";
-import { useAuthStore } from "@/auth/store";
+import { useAuthStore } from "@/store";
 import { Button } from "@/components/ui/button";
 import { ShieldCheckIcon, LogOutIcon, LayoutDashboardIcon } from "lucide-react";
 

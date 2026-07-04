@@ -1,4 +1,4 @@
-import { useAuthStore } from "@/auth/store";
+import { useAuthStore } from "@/store";
 import { Navigate, Outlet } from "react-router";
 
 export const ProtectedRoute = () => {

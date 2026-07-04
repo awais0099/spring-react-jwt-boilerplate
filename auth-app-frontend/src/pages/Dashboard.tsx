@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAuthStore } from "@/auth/store";
+import { useAuthStore } from "@/store";
 import { authService } from "@/api/authService";
 import { Button } from "@/components/ui/button";
 import {
