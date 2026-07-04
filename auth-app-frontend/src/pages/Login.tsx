@@ -66,7 +66,7 @@ export default function LoginPage() {
   };
 
   const handleOAuth2Login = (provider: "google" | "github") => {
-    const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+    const backendUrl = import.meta.env.VITE_API_BASE_URL;
     window.location.href = `${backendUrl}/oauth2/authorization/${provider}`;
   };
 

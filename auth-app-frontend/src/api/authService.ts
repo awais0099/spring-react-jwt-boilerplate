@@ -17,7 +17,7 @@ export interface LoginRequest {
 
 // No interceptors — must stay clean so it never sends an expired access token
 const refreshClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
 });
 

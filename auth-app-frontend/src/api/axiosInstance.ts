@@ -27,8 +27,10 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1",
+  baseURL: `${apiBaseUrl}/api/v1`,
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
   withCredentials: true,
